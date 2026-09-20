@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graduation Day Photos</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="cap">🎓</div>
+    <h1>Graduation Day Photos</h1>
+    <p class="subtitle">Add every photo you took &mdash; let's not miss a single one. Everyone with this link can upload and download, full quality, no compression.</p>
+  </div>
+</header>
+
+<main>
+  <section id="upload-section" class="card">
+    <div id="dropzone" class="dropzone">
+      <input type="file" id="fileInput" accept="image/*" multiple hidden>
+      <div class="dropzone-content">
+        <div class="upload-icon">📤</div>
+        <p class="dropzone-title">Tap to choose photos, or drag them here</p>
+        <p class="dropzone-hint">Pick from your gallery or take a new photo &middot; multiple photos at once</p>
+        <button id="chooseBtn" type="button" class="btn btn-primary">Choose Photos</button>
+      </div>
+    </div>
+    <div id="uploadList" class="upload-list"></div>
+  </section>
+
+  <section class="gallery-header">
+    <h2>Gallery <span id="photoCount" class="count"></span></h2>
+    <button id="downloadAllBtn" class="btn btn-secondary" disabled>⬇ Download All (.zip)</button>
+  </section>
+
+  <section id="gallery" class="gallery">
+    <p id="emptyState" class="empty-state">No photos yet &mdash; be the first to add one!</p>
+  </section>
+</main>
+
+<footer>
+  <p>Made with 💛 for a day worth remembering.</p>
+</footer>
+
+<div id="toast" class="toast"></div>
+
+<!-- Firebase (compat SDK, no build step needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+
+<!-- Zip download support -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<script src="firebase-config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
