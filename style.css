@@ -358,13 +358,6 @@ main {
   justify-content: center;
 }
 
-footer {
-  text-align: center;
-  color: var(--text-dim);
-  padding: 20px;
-  font-size: 13px;
-}
-
 .toast {
   position: fixed;
   bottom: 20px;
