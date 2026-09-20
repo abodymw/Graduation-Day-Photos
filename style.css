@@ -28,14 +28,14 @@ body {
   background: radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.12), transparent 60%);
 }
 
-.hero-inner { max-width: 640px; margin: 0 auto; }
+.hero-inner { max-width: 760px; margin: 0 auto; }
 
 .cover {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 36px;
-  margin-bottom: 24px;
+  margin: 20px 0 24px;
 }
 
 .cover-photo {
@@ -80,18 +80,10 @@ body {
 .purpose {
   color: var(--gold-bright);
   font-style: italic;
-  margin: 0 auto 16px;
-  line-height: 1.6;
-  font-size: 15px;
-  max-width: 460px;
-}
-
-.subtitle {
-  color: var(--text-dim);
   margin: 0 auto;
-  line-height: 1.5;
-  font-size: 15px;
-  max-width: 480px;
+  line-height: 1.7;
+  font-size: 18px;
+  max-width: 680px;
 }
 
 main {
@@ -125,9 +117,7 @@ main {
 
 .upload-icon { font-size: 36px; margin-bottom: 8px; }
 
-.dropzone-title { margin: 4px 0; font-weight: 600; }
-
-.dropzone-hint { margin: 0 0 16px; color: var(--text-dim); font-size: 13px; }
+.dropzone-title { margin: 4px 0 16px; font-weight: 600; }
 
 .btn {
   border: none;
@@ -205,44 +195,43 @@ main {
 .progress-fill.done { background: var(--success); }
 .progress-fill.error { background: var(--danger); }
 
-.preview-section { margin-bottom: 28px; }
-
-.preview-strip-wrap {
+.download-dropzone {
+  position: relative;
   overflow: hidden;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--bg-soft);
-  mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
-  -webkit-mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
-}
-
-.preview-strip {
+  cursor: default;
+  padding: 0;
+  min-height: 214px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px;
+  justify-content: center;
+}
+
+.download-preview-bg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 0;
   width: max-content;
   animation: preview-scroll linear infinite;
 }
 
-.preview-strip-wrap:hover .preview-strip { animation-play-state: paused; }
-
-.preview-strip img {
-  height: 110px;
-  width: 150px;
+.download-preview-bg img {
+  height: 214px;
+  width: auto;
   object-fit: cover;
-  border-radius: 10px;
-  border: 1px solid var(--border);
   flex-shrink: 0;
 }
 
-.preview-empty {
-  color: var(--text-dim);
-  font-size: 14px;
-  padding: 40px 20px;
-  margin: 0;
-  width: 100vw;
-  max-width: 560px;
+.download-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(3,3,3,0.55), rgba(3,3,3,0.75));
+}
+
+.download-content {
+  position: relative;
+  z-index: 2;
 }
 
 @keyframes preview-scroll {

@@ -7,7 +7,9 @@ const uploadList = document.getElementById("uploadList");
 const gallery = document.getElementById("gallery");
 const emptyState = document.getElementById("emptyState");
 const photoCount = document.getElementById("photoCount");
-const previewStrip = document.getElementById("previewStrip");
+const downloadPreviewBg = document.getElementById("downloadPreviewBg");
+const photoPicker = document.getElementById("photoPicker");
+const downloadPhotosBtn = document.getElementById("downloadPhotosBtn");
 const selectAllBtn = document.getElementById("selectAllBtn");
 const clearSelectionBtn = document.getElementById("clearSelectionBtn");
 const downloadSelectedBtn = document.getElementById("downloadSelectedBtn");
@@ -196,23 +198,32 @@ function renderGallery() {
   });
   gallery.appendChild(frag);
   updateSelectionUI();
-  renderPreviewStrip();
+  renderDownloadPreviewBg();
 }
 
-function renderPreviewStrip() {
+function renderDownloadPreviewBg() {
   if (!galleryItems.length) {
-    previewStrip.style.animation = "none";
-    previewStrip.innerHTML = `<p id="previewEmpty" class="preview-empty">Your sneak peek reel will appear here once photos start coming in.</p>`;
+    downloadPreviewBg.style.animation = "none";
+    downloadPreviewBg.innerHTML = "";
     return;
   }
   // Duplicate the list so the scrolling loop is seamless.
   const doubled = galleryItems.concat(galleryItems);
-  previewStrip.innerHTML = doubled
+  downloadPreviewBg.innerHTML = doubled
     .map((item) => `<img src="${item.url}" alt="" loading="lazy">`)
     .join("");
   const durationSeconds = Math.max(galleryItems.length * 4, 14);
-  previewStrip.style.animation = `preview-scroll ${durationSeconds}s linear infinite`;
+  downloadPreviewBg.style.animation = `preview-scroll ${durationSeconds}s linear infinite`;
 }
+
+downloadPhotosBtn.addEventListener("click", () => {
+  const opening = photoPicker.hidden;
+  photoPicker.hidden = !opening;
+  downloadPhotosBtn.textContent = opening ? "Hide Photos" : "Download Photos";
+  if (opening) {
+    photoPicker.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+});
 
 function updateSelectionUI() {
   const n = selectedNames.size;
