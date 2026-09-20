@@ -28,7 +28,7 @@ body {
   background: radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.12), transparent 60%);
 }
 
-.hero-inner { max-width: 760px; margin: 0 auto; }
+.hero-inner { max-width: 860px; margin: 0 auto; }
 
 .cover {
   display: flex;
@@ -83,7 +83,7 @@ body {
   margin: 0 auto;
   line-height: 1.7;
   font-size: 18px;
-  max-width: 680px;
+  max-width: 760px;
 }
 
 main {
