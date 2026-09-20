@@ -7,6 +7,7 @@ const uploadList = document.getElementById("uploadList");
 const gallery = document.getElementById("gallery");
 const emptyState = document.getElementById("emptyState");
 const photoCount = document.getElementById("photoCount");
+const previewStrip = document.getElementById("previewStrip");
 const selectAllBtn = document.getElementById("selectAllBtn");
 const clearSelectionBtn = document.getElementById("clearSelectionBtn");
 const downloadSelectedBtn = document.getElementById("downloadSelectedBtn");
@@ -195,6 +196,22 @@ function renderGallery() {
   });
   gallery.appendChild(frag);
   updateSelectionUI();
+  renderPreviewStrip();
+}
+
+function renderPreviewStrip() {
+  if (!galleryItems.length) {
+    previewStrip.style.animation = "none";
+    previewStrip.innerHTML = `<p id="previewEmpty" class="preview-empty">Your sneak peek reel will appear here once photos start coming in.</p>`;
+    return;
+  }
+  // Duplicate the list so the scrolling loop is seamless.
+  const doubled = galleryItems.concat(galleryItems);
+  previewStrip.innerHTML = doubled
+    .map((item) => `<img src="${item.url}" alt="" loading="lazy">`)
+    .join("");
+  const durationSeconds = Math.max(galleryItems.length * 4, 14);
+  previewStrip.style.animation = `preview-scroll ${durationSeconds}s linear infinite`;
 }
 
 function updateSelectionUI() {
