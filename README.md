@@ -21,3 +21,9 @@ A simple shared page: anyone with the link can upload photos (from gallery or ca
 
 - Max 30 MB per photo (matches `storage.rules`), plenty for full-resolution phone photos.
 - Firebase's free tier gives 5 GB storage and 1 GB/day of downloads, which resets daily, comfortably enough for a graduation-day link shared among friends.
+
+## Abuse protection (already set up)
+
+- Firebase Storage now requires the Blaze (pay-as-you-go) plan; a $1/month budget alert with email notifications at 50/90/100% was auto-created when upgrading.
+- App Check (reCAPTCHA Enterprise) is wired into `firebase-config.js` with a site key restricted to the `abodymw.github.io` domain, so only this site can use the Storage bucket.
+- **Still needed after deploying to GitHub Pages**: once the live site is confirmed working, go to Firebase Console → App Check → APIs, and switch Storage from "Unenforced" to "Enforced". Leaving it unenforced until then means App Check is monitoring but not yet blocking anything.
