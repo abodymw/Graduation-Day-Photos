@@ -7,10 +7,14 @@ const uploadList = document.getElementById("uploadList");
 const gallery = document.getElementById("gallery");
 const emptyState = document.getElementById("emptyState");
 const photoCount = document.getElementById("photoCount");
-const downloadAllBtn = document.getElementById("downloadAllBtn");
+const selectAllBtn = document.getElementById("selectAllBtn");
+const clearSelectionBtn = document.getElementById("clearSelectionBtn");
+const downloadSelectedBtn = document.getElementById("downloadSelectedBtn");
+const selectedCountEl = document.getElementById("selectedCount");
 const toastEl = document.getElementById("toast");
 
 let galleryItems = []; // {name, url, originalName, size, timeCreated}
+const selectedNames = new Set();
 
 function showToast(message, isError) {
   toastEl.textContent = message;
@@ -141,57 +145,78 @@ function addGalleryItem(item) {
 function renderGallery() {
   emptyState.style.display = galleryItems.length ? "none" : "block";
   photoCount.textContent = galleryItems.length ? `(${galleryItems.length})` : "";
-  downloadAllBtn.disabled = galleryItems.length === 0;
 
   gallery.querySelectorAll(".photo-tile").forEach((el) => el.remove());
 
   const frag = document.createDocumentFragment();
   galleryItems.forEach((item) => {
     const tile = document.createElement("div");
-    tile.className = "photo-tile";
+    tile.className = "photo-tile" + (selectedNames.has(item.name) ? " selected" : "");
+    tile.dataset.name = item.name;
     tile.innerHTML = `
+      <label class="select-check">
+        <input type="checkbox" ${selectedNames.has(item.name) ? "checked" : ""}>
+      </label>
       <img src="${item.url}" alt="${item.originalName}" loading="lazy">
       <div class="tile-actions">
         <button class="download-btn" title="Download original">⬇</button>
       </div>
     `;
     const img = tile.querySelector("img");
+    const checkbox = tile.querySelector("input");
+
     img.addEventListener("click", () => window.open(item.url, "_blank"));
     img.addEventListener("error", () => {
-      tile.innerHTML = `
-        <div class="fallback">
-          <span>📷</span>
-          <span>${item.originalName}</span>
-          <span>(preview unavailable)</span>
-        </div>
-        <div class="tile-actions">
-          <button class="download-btn" title="Download original">⬇</button>
-        </div>
-      `;
-      tile.querySelector(".download-btn").addEventListener("click", (e) => {
-        e.stopPropagation();
-        downloadOriginal(item);
-      });
+      img.replaceWith(
+        Object.assign(document.createElement("div"), {
+          className: "fallback",
+          innerHTML: `<span>📷</span><span>${item.originalName}</span><span>(preview unavailable)</span>`,
+        })
+      );
     });
+
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        selectedNames.add(item.name);
+        tile.classList.add("selected");
+      } else {
+        selectedNames.delete(item.name);
+        tile.classList.remove("selected");
+      }
+      updateSelectionUI();
+    });
+
     tile.querySelector(".download-btn").addEventListener("click", (e) => {
       e.stopPropagation();
-      downloadOriginal(item);
+      downloadItems([item]);
     });
+
     frag.appendChild(tile);
   });
   gallery.appendChild(frag);
+  updateSelectionUI();
 }
 
-async function downloadOriginal(item) {
-  try {
-    showToast(`Downloading "${item.originalName}"...`);
-    const res = await fetch(item.url);
-    const blob = await res.blob();
-    saveAs(blob, item.originalName);
-  } catch (err) {
-    showToast(`Couldn't download "${item.originalName}": ${err.message}`, true);
-  }
+function updateSelectionUI() {
+  const n = selectedNames.size;
+  downloadSelectedBtn.disabled = n === 0;
+  selectedCountEl.textContent = n ? `(${n})` : "";
 }
+
+selectAllBtn.addEventListener("click", () => {
+  galleryItems.forEach((item) => selectedNames.add(item.name));
+  renderGallery();
+});
+
+clearSelectionBtn.addEventListener("click", () => {
+  selectedNames.clear();
+  renderGallery();
+});
+
+downloadSelectedBtn.addEventListener("click", () => {
+  const items = galleryItems.filter((item) => selectedNames.has(item.name));
+  downloadItems(items);
+});
 
 async function loadGallery() {
   try {
@@ -219,37 +244,56 @@ async function loadGallery() {
   }
 }
 
-downloadAllBtn.addEventListener("click", async () => {
-  if (!galleryItems.length) return;
-  downloadAllBtn.disabled = true;
-  const originalLabel = downloadAllBtn.textContent;
-  const zip = new JSZip();
-  const usedNames = new Set();
+// ---------- Download (straight to device, not zipped) ----------
 
+function triggerBrowserDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+async function downloadItems(items) {
+  if (!items.length) return;
   try {
-    for (let i = 0; i < galleryItems.length; i++) {
-      const item = galleryItems[i];
-      downloadAllBtn.textContent = `Zipping ${i + 1}/${galleryItems.length}...`;
-      const res = await fetch(item.url);
-      const blob = await res.blob();
-      let name = item.originalName;
-      if (usedNames.has(name)) {
-        const dot = name.lastIndexOf(".");
-        name = dot > -1 ? `${name.slice(0, dot)}_${i}${name.slice(dot)}` : `${name}_${i}`;
+    showToast(
+      items.length === 1
+        ? `Preparing "${items[0].originalName}"...`
+        : `Preparing ${items.length} photos...`
+    );
+
+    const files = await Promise.all(
+      items.map(async (item) => {
+        const res = await fetch(item.url);
+        const blob = await res.blob();
+        return new File([blob], item.originalName, { type: blob.type || "image/jpeg" });
+      })
+    );
+
+    // On phones, Web Share lets people save straight into their Photos/gallery app.
+    if (navigator.canShare && navigator.canShare({ files })) {
+      try {
+        await navigator.share({ files });
+        return;
+      } catch (shareErr) {
+        if (shareErr.name === "AbortError") return; // user cancelled the share sheet
+        // otherwise fall through to plain downloads below
       }
-      usedNames.add(name);
-      zip.file(name, blob, { compression: "STORE" }); // no re-compression, exact original bytes
     }
-    downloadAllBtn.textContent = "Building zip...";
-    const content = await zip.generateAsync({ type: "blob" });
-    saveAs(content, "graduation-photos.zip");
+
+    // Desktop / unsupported browsers: trigger normal downloads to local storage,
+    // spaced out slightly so the browser doesn't block them as a popup burst.
+    files.forEach((file, i) => {
+      setTimeout(() => triggerBrowserDownload(file, file.name), i * 350);
+    });
   } catch (err) {
-    showToast(`Download all failed: ${err.message}`, true);
-  } finally {
-    downloadAllBtn.textContent = originalLabel;
-    downloadAllBtn.disabled = false;
+    showToast(`Download failed: ${err.message}`, true);
   }
-});
+}
 
 // ---------- Init ----------
 

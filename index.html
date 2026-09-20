@@ -10,7 +10,18 @@
 
 <header class="hero">
   <div class="hero-inner">
-    <div class="cap">🎓</div>
+    <div class="cover">
+      <div class="cover-photo">
+        <img src="images/graduate1.jpg" alt="Graduate 1"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div class="cover-placeholder">🎓</div>
+      </div>
+      <div class="cover-photo">
+        <img src="images/graduate2.jpg" alt="Graduate 2"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div class="cover-placeholder">🎓</div>
+      </div>
+    </div>
     <h1>Graduation Day Photos</h1>
     <p class="subtitle">Add every photo you took &mdash; let's not miss a single one. Everyone with this link can upload and download, full quality, no compression.</p>
   </div>
@@ -23,8 +34,8 @@
       <div class="dropzone-content">
         <div class="upload-icon">📤</div>
         <p class="dropzone-title">Tap to choose photos, or drag them here</p>
-        <p class="dropzone-hint">Pick from your gallery or take a new photo &middot; multiple photos at once</p>
-        <button id="chooseBtn" type="button" class="btn btn-primary">Choose Photos</button>
+        <p class="dropzone-hint">Pick from your gallery, take a new photo, or browse files &middot; select as many as you want</p>
+        <button id="chooseBtn" type="button" class="btn btn-primary">Upload Pictures</button>
       </div>
     </div>
     <div id="uploadList" class="upload-list"></div>
@@ -32,7 +43,11 @@
 
   <section class="gallery-header">
     <h2>Gallery <span id="photoCount" class="count"></span></h2>
-    <button id="downloadAllBtn" class="btn btn-secondary" disabled>⬇ Download All (.zip)</button>
+    <div class="selection-bar">
+      <button id="selectAllBtn" class="btn btn-ghost">Select All</button>
+      <button id="clearSelectionBtn" class="btn btn-ghost">Clear</button>
+      <button id="downloadSelectedBtn" class="btn btn-primary" disabled>⬇ Download Selected <span id="selectedCount"></span></button>
+    </div>
   </section>
 
   <section id="gallery" class="gallery">
@@ -49,10 +64,6 @@
 <!-- Firebase (compat SDK, no build step needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
-
-<!-- Zip download support -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
 <script src="firebase-config.js"></script>
 <script src="app.js"></script>
