@@ -8,9 +8,6 @@ function isVideo(item) {
 const dropzone = document.getElementById("dropzone");
 const fileInput = document.getElementById("fileInput");
 const chooseBtn = document.getElementById("chooseBtn");
-const uploadMenu = document.getElementById("uploadMenu");
-const menuDeviceBtn = document.getElementById("menuDeviceBtn");
-const menuDriveBtn = document.getElementById("menuDriveBtn");
 const uploadList = document.getElementById("uploadList");
 const gallery = document.getElementById("gallery");
 const emptyState = document.getElementById("emptyState");
@@ -53,33 +50,9 @@ function uniqueStorageName(originalName) {
 
 // ---------- Upload ----------
 
-function openUploadMenu() {
-  uploadMenu.hidden = false;
-}
-function closeUploadMenu() {
-  uploadMenu.hidden = true;
-}
-
-chooseBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  uploadMenu.hidden ? openUploadMenu() : closeUploadMenu();
-});
-
+chooseBtn.addEventListener("click", () => fileInput.click());
 dropzone.addEventListener("click", (e) => {
-  if (uploadMenu.contains(e.target)) return;
-  if (e.target === chooseBtn) return; // handled by chooseBtn's own listener
-  openUploadMenu();
-});
-
-document.addEventListener("click", (e) => {
-  if (!uploadMenu.hidden && !uploadMenu.contains(e.target) && e.target !== chooseBtn) {
-    closeUploadMenu();
-  }
-});
-
-menuDeviceBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  closeUploadMenu();
+  if (e.target === chooseBtn) return;
   fileInput.click();
 });
 
@@ -105,80 +78,6 @@ fileInput.addEventListener("change", () => {
 dropzone.addEventListener("drop", (e) => {
   handleFiles(e.dataTransfer.files);
 });
-
-// ---------- Google Drive import ----------
-
-let driveAccessToken = null;
-let driveTokenClient = null;
-
-function ensureDriveTokenClient() {
-  if (driveTokenClient) return driveTokenClient;
-  driveTokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: GOOGLE_CLIENT_ID,
-    scope: GOOGLE_DRIVE_SCOPE,
-    callback: (tokenResponse) => {
-      if (tokenResponse.error) {
-        showToast(`Google Drive sign-in failed: ${tokenResponse.error}`, true);
-        return;
-      }
-      driveAccessToken = tokenResponse.access_token;
-      openDrivePicker();
-    },
-  });
-  return driveTokenClient;
-}
-
-menuDriveBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  closeUploadMenu();
-  ensureDriveTokenClient();
-  if (driveAccessToken) {
-    openDrivePicker();
-  } else {
-    driveTokenClient.requestAccessToken({ prompt: "" });
-  }
-});
-
-function openDrivePicker() {
-  gapi.load("picker", () => {
-    const imagesView = new google.picker.DocsView(google.picker.ViewId.DOCS_IMAGES)
-      .setIncludeFolders(true)
-      .setSelectFolderEnabled(false);
-    const videosView = new google.picker.DocsView(google.picker.ViewId.DOCS_VIDEOS)
-      .setIncludeFolders(true)
-      .setSelectFolderEnabled(false);
-    const picker = new google.picker.PickerBuilder()
-      .addView(imagesView)
-      .addView(videosView)
-      .setOAuthToken(driveAccessToken)
-      .setDeveloperKey(GOOGLE_API_KEY)
-      .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
-      .setCallback(handleDrivePicked)
-      .build();
-    picker.setVisible(true);
-  });
-}
-
-function handleDrivePicked(data) {
-  if (data.action !== google.picker.Action.PICKED) return;
-  data.docs.forEach(importDriveFile);
-}
-
-async function importDriveFile(doc) {
-  try {
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`, {
-      headers: { Authorization: `Bearer ${driveAccessToken}` },
-    });
-    if (!res.ok) throw new Error(`Drive download failed (${res.status})`);
-    const blob = await res.blob();
-    const file = new File([blob], doc.name, {
-      type: doc.mimeType || blob.type || "application/octet-stream",
-    });
-    uploadFile(file);
-  } catch (err) {
-    showToast(`Couldn't import "${doc.name}" from Drive: ${err.message}`, true);
-  }
-}
 
 function handleFiles(fileList) {
   const files = Array.from(fileList).filter(
