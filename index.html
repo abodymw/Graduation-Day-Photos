@@ -34,7 +34,10 @@
       <div class="dropzone-content">
         <div class="upload-icon">📤</div>
         <p class="dropzone-title">Tap to choose photos or drag them here</p>
-        <button id="chooseBtn" type="button" class="btn btn-primary">Upload Photos</button>
+        <div class="upload-btn-row">
+          <button id="chooseBtn" type="button" class="btn btn-primary">Upload Photos</button>
+          <button id="driveBtn" type="button" class="btn btn-secondary">📁 Google Drive</button>
+        </div>
       </div>
     </div>
     <div id="uploadList" class="upload-list"></div>
@@ -73,7 +76,12 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-check-compat.js"></script>
 
+<!-- Google Drive picker (lets guests import photos straight from Drive) -->
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
+
 <script src="firebase-config.js"></script>
+<script src="google-config.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

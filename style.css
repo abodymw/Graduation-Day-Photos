@@ -118,6 +118,13 @@ main {
 
 .dropzone-title { margin: 4px 0 16px; font-weight: 600; }
 
+.upload-btn-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .btn {
   border: none;
   border-radius: 999px;

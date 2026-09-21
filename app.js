@@ -3,6 +3,7 @@ const MAX_FILE_BYTES = 30 * 1024 * 1024; // keep in sync with Storage Rules
 const dropzone = document.getElementById("dropzone");
 const fileInput = document.getElementById("fileInput");
 const chooseBtn = document.getElementById("chooseBtn");
+const driveBtn = document.getElementById("driveBtn");
 const uploadList = document.getElementById("uploadList");
 const gallery = document.getElementById("gallery");
 const emptyState = document.getElementById("emptyState");
@@ -47,7 +48,7 @@ function uniqueStorageName(originalName) {
 
 chooseBtn.addEventListener("click", () => fileInput.click());
 dropzone.addEventListener("click", (e) => {
-  if (e.target === chooseBtn) return;
+  if (e.target === chooseBtn || e.target === driveBtn) return;
   fileInput.click();
 });
 
@@ -73,6 +74,73 @@ fileInput.addEventListener("change", () => {
 dropzone.addEventListener("drop", (e) => {
   handleFiles(e.dataTransfer.files);
 });
+
+// ---------- Google Drive import ----------
+
+let driveAccessToken = null;
+let driveTokenClient = null;
+
+function ensureDriveTokenClient() {
+  if (driveTokenClient) return driveTokenClient;
+  driveTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: GOOGLE_DRIVE_SCOPE,
+    callback: (tokenResponse) => {
+      if (tokenResponse.error) {
+        showToast(`Google Drive sign-in failed: ${tokenResponse.error}`, true);
+        return;
+      }
+      driveAccessToken = tokenResponse.access_token;
+      openDrivePicker();
+    },
+  });
+  return driveTokenClient;
+}
+
+driveBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  ensureDriveTokenClient();
+  if (driveAccessToken) {
+    openDrivePicker();
+  } else {
+    driveTokenClient.requestAccessToken({ prompt: "" });
+  }
+});
+
+function openDrivePicker() {
+  gapi.load("picker", () => {
+    const view = new google.picker.DocsView(google.picker.ViewId.DOCS_IMAGES)
+      .setIncludeFolders(true)
+      .setSelectFolderEnabled(false);
+    const picker = new google.picker.PickerBuilder()
+      .addView(view)
+      .setOAuthToken(driveAccessToken)
+      .setDeveloperKey(GOOGLE_API_KEY)
+      .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
+      .setCallback(handleDrivePicked)
+      .build();
+    picker.setVisible(true);
+  });
+}
+
+function handleDrivePicked(data) {
+  if (data.action !== google.picker.Action.PICKED) return;
+  data.docs.forEach(importDriveFile);
+}
+
+async function importDriveFile(doc) {
+  try {
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`, {
+      headers: { Authorization: `Bearer ${driveAccessToken}` },
+    });
+    if (!res.ok) throw new Error(`Drive download failed (${res.status})`);
+    const blob = await res.blob();
+    const file = new File([blob], doc.name, { type: doc.mimeType || blob.type || "image/jpeg" });
+    uploadFile(file);
+  } catch (err) {
+    showToast(`Couldn't import "${doc.name}" from Drive: ${err.message}`, true);
+  }
+}
 
 function handleFiles(fileList) {
   const files = Array.from(fileList).filter((f) => f.type.startsWith("image/"));
