@@ -3,7 +3,9 @@ const MAX_FILE_BYTES = 30 * 1024 * 1024; // keep in sync with Storage Rules
 const dropzone = document.getElementById("dropzone");
 const fileInput = document.getElementById("fileInput");
 const chooseBtn = document.getElementById("chooseBtn");
-const driveBtn = document.getElementById("driveBtn");
+const uploadMenu = document.getElementById("uploadMenu");
+const menuDeviceBtn = document.getElementById("menuDeviceBtn");
+const menuDriveBtn = document.getElementById("menuDriveBtn");
 const uploadList = document.getElementById("uploadList");
 const gallery = document.getElementById("gallery");
 const emptyState = document.getElementById("emptyState");
@@ -46,9 +48,33 @@ function uniqueStorageName(originalName) {
 
 // ---------- Upload ----------
 
-chooseBtn.addEventListener("click", () => fileInput.click());
+function openUploadMenu() {
+  uploadMenu.hidden = false;
+}
+function closeUploadMenu() {
+  uploadMenu.hidden = true;
+}
+
+chooseBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  uploadMenu.hidden ? openUploadMenu() : closeUploadMenu();
+});
+
 dropzone.addEventListener("click", (e) => {
-  if (e.target === chooseBtn || e.target === driveBtn) return;
+  if (uploadMenu.contains(e.target)) return;
+  if (e.target === chooseBtn) return; // handled by chooseBtn's own listener
+  openUploadMenu();
+});
+
+document.addEventListener("click", (e) => {
+  if (!uploadMenu.hidden && !uploadMenu.contains(e.target) && e.target !== chooseBtn) {
+    closeUploadMenu();
+  }
+});
+
+menuDeviceBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  closeUploadMenu();
   fileInput.click();
 });
 
@@ -97,8 +123,9 @@ function ensureDriveTokenClient() {
   return driveTokenClient;
 }
 
-driveBtn.addEventListener("click", (e) => {
+menuDriveBtn.addEventListener("click", (e) => {
   e.stopPropagation();
+  closeUploadMenu();
   ensureDriveTokenClient();
   if (driveAccessToken) {
     openDrivePicker();

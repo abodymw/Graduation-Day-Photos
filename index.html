@@ -34,9 +34,12 @@
       <div class="dropzone-content">
         <div class="upload-icon">📤</div>
         <p class="dropzone-title">Tap to choose photos or drag them here</p>
-        <div class="upload-btn-row">
+        <div class="upload-btn-wrap">
           <button id="chooseBtn" type="button" class="btn btn-primary">Upload Photos</button>
-          <button id="driveBtn" type="button" class="btn btn-secondary">📁 Google Drive</button>
+          <div id="uploadMenu" class="upload-menu" hidden>
+            <button type="button" id="menuDeviceBtn" class="upload-menu-item">📱 From this device</button>
+            <button type="button" id="menuDriveBtn" class="upload-menu-item">📁 From Google Drive</button>
+          </div>
         </div>
       </div>
     </div>
