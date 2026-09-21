@@ -1,4 +1,9 @@
-const MAX_FILE_BYTES = 30 * 1024 * 1024; // keep in sync with Storage Rules
+const MAX_IMAGE_BYTES = 30 * 1024 * 1024; // keep in sync with Storage Rules
+const MAX_VIDEO_BYTES = 300 * 1024 * 1024; // keep in sync with Storage Rules
+
+function isVideo(item) {
+  return (item.contentType || "").startsWith("video/");
+}
 
 const dropzone = document.getElementById("dropzone");
 const fileInput = document.getElementById("fileInput");
@@ -136,11 +141,15 @@ menuDriveBtn.addEventListener("click", (e) => {
 
 function openDrivePicker() {
   gapi.load("picker", () => {
-    const view = new google.picker.DocsView(google.picker.ViewId.DOCS_IMAGES)
+    const imagesView = new google.picker.DocsView(google.picker.ViewId.DOCS_IMAGES)
+      .setIncludeFolders(true)
+      .setSelectFolderEnabled(false);
+    const videosView = new google.picker.DocsView(google.picker.ViewId.DOCS_VIDEOS)
       .setIncludeFolders(true)
       .setSelectFolderEnabled(false);
     const picker = new google.picker.PickerBuilder()
-      .addView(view)
+      .addView(imagesView)
+      .addView(videosView)
       .setOAuthToken(driveAccessToken)
       .setDeveloperKey(GOOGLE_API_KEY)
       .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
@@ -162,7 +171,9 @@ async function importDriveFile(doc) {
     });
     if (!res.ok) throw new Error(`Drive download failed (${res.status})`);
     const blob = await res.blob();
-    const file = new File([blob], doc.name, { type: doc.mimeType || blob.type || "image/jpeg" });
+    const file = new File([blob], doc.name, {
+      type: doc.mimeType || blob.type || "application/octet-stream",
+    });
     uploadFile(file);
   } catch (err) {
     showToast(`Couldn't import "${doc.name}" from Drive: ${err.message}`, true);
@@ -170,17 +181,21 @@ async function importDriveFile(doc) {
 }
 
 function handleFiles(fileList) {
-  const files = Array.from(fileList).filter((f) => f.type.startsWith("image/"));
+  const files = Array.from(fileList).filter(
+    (f) => f.type.startsWith("image/") || f.type.startsWith("video/")
+  );
   if (files.length === 0) {
-    showToast("Please choose image files only.", true);
+    showToast("Please choose image or video files only.", true);
     return;
   }
   files.forEach(uploadFile);
 }
 
 function uploadFile(file) {
-  if (file.size > MAX_FILE_BYTES) {
-    showToast(`"${file.name}" is too large (max ${formatBytes(MAX_FILE_BYTES)}).`, true);
+  const isVid = file.type.startsWith("video/");
+  const maxBytes = isVid ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+  if (file.size > maxBytes) {
+    showToast(`"${file.name}" is too large (max ${formatBytes(maxBytes)}).`, true);
     return;
   }
 
@@ -227,6 +242,7 @@ function uploadFile(file) {
         url,
         originalName: file.name,
         size: file.size,
+        contentType: file.type || "application/octet-stream",
         timeCreated: new Date().toISOString(),
       });
     }
@@ -251,24 +267,30 @@ function renderGallery() {
     const tile = document.createElement("div");
     tile.className = "photo-tile" + (selectedNames.has(item.name) ? " selected" : "");
     tile.dataset.name = item.name;
+    const video = isVideo(item);
+    const mediaTag = video
+      ? `<video src="${item.url}" muted playsinline preload="metadata"></video><span class="video-badge">▶</span>`
+      : `<img src="${item.url}" alt="${item.originalName}" loading="lazy">`;
     tile.innerHTML = `
       <label class="select-check">
         <input type="checkbox" ${selectedNames.has(item.name) ? "checked" : ""}>
       </label>
-      <img src="${item.url}" alt="${item.originalName}" loading="lazy">
+      ${mediaTag}
       <div class="tile-actions">
         <button class="download-btn" title="Download original">⬇</button>
       </div>
     `;
-    const img = tile.querySelector("img");
+    const media = tile.querySelector(video ? "video" : "img");
     const checkbox = tile.querySelector("input");
 
-    img.addEventListener("click", () => window.open(item.url, "_blank"));
-    img.addEventListener("error", () => {
-      img.replaceWith(
+    media.addEventListener("click", () => window.open(item.url, "_blank"));
+    media.addEventListener("error", () => {
+      const badge = tile.querySelector(".video-badge");
+      if (badge) badge.remove();
+      media.replaceWith(
         Object.assign(document.createElement("div"), {
           className: "fallback",
-          innerHTML: `<span>📷</span><span>${item.originalName}</span><span>(preview unavailable)</span>`,
+          innerHTML: `<span>${video ? "🎬" : "📷"}</span><span>${item.originalName}</span><span>(preview unavailable)</span>`,
         })
       );
     });
@@ -305,7 +327,11 @@ function renderDownloadPreviewBg() {
   // Duplicate the list so the scrolling loop is seamless.
   const doubled = galleryItems.concat(galleryItems);
   downloadPreviewBg.innerHTML = doubled
-    .map((item) => `<img src="${item.url}" alt="" loading="lazy">`)
+    .map((item) =>
+      isVideo(item)
+        ? `<video src="${item.url}" muted autoplay loop playsinline preload="auto"></video>`
+        : `<img src="${item.url}" alt="" loading="lazy">`
+    )
     .join("");
   const durationSeconds = Math.max(galleryItems.length * 4, 14);
   downloadPreviewBg.style.animation = `preview-scroll ${durationSeconds}s linear infinite`;
@@ -355,6 +381,7 @@ async function loadGallery() {
           url,
           originalName: (metadata.customMetadata && metadata.customMetadata.originalName) || itemRef.name,
           size: metadata.size,
+          contentType: metadata.contentType || "application/octet-stream",
           timeCreated: metadata.timeCreated,
         };
       })
@@ -386,14 +413,16 @@ async function downloadItems(items) {
     showToast(
       items.length === 1
         ? `Preparing "${items[0].originalName}"...`
-        : `Preparing ${items.length} photos...`
+        : `Preparing ${items.length} files...`
     );
 
     const files = await Promise.all(
       items.map(async (item) => {
         const res = await fetch(item.url);
         const blob = await res.blob();
-        return new File([blob], item.originalName, { type: blob.type || "image/jpeg" });
+        return new File([blob], item.originalName, {
+          type: item.contentType || blob.type || "application/octet-stream",
+        });
       })
     );
 
